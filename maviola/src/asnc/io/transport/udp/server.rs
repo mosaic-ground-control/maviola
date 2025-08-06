@@ -21,6 +21,16 @@ impl<V: MaybeVersioned> ConnectionBuilder<V> for UdpServer {
     async fn build(&self) -> Result<(Connection<V>, ConnectionHandler)> {
         let server_addr = self.addr;
         let udp_socket = Arc::new(UdpSocket::bind(server_addr).await?);
+        match (self.multicast_addr, self.multicast_interface) {
+            (Some(m_addr), Some(m_interface)) => {
+                udp_socket.join_multicast_v4(m_addr, m_interface)?;
+            }
+            _ => (),
+        }
+
+        if let Some(ttl) = self.ttl {
+            udp_socket.set_ttl(ttl)?;
+        }
 
         let conn_state = Closer::new();
         let (connection, chan_factory) = Connection::new(self.info.clone(), conn_state.to_shared());

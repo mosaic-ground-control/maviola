@@ -1,4 +1,4 @@
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{Ipv4Addr, SocketAddr, ToSocketAddrs};
 
 use crate::core::io::{ConnectionConf, ConnectionDetails, ConnectionInfo};
 use crate::core::utils::net::resolve_socket_addr;
@@ -61,6 +61,9 @@ use crate::prelude::*;
 pub struct UdpServer {
     pub(crate) addr: SocketAddr,
     pub(crate) info: ConnectionInfo,
+    pub(crate) multicast_addr: Option<Ipv4Addr>,
+    pub(crate) multicast_interface: Option<Ipv4Addr>,
+    pub(crate) ttl: Option<u32>,
 }
 
 impl UdpServer {
@@ -71,7 +74,37 @@ impl UdpServer {
     pub fn new(addr: impl ToSocketAddrs) -> Result<Self> {
         let addr = resolve_socket_addr(addr)?;
         let info = ConnectionInfo::new(ConnectionDetails::UdpServer { bind_addr: addr });
-        Ok(Self { addr, info })
+        Ok(Self {
+            addr,
+            info,
+            multicast_addr: None,
+            multicast_interface: None,
+            ttl: None,
+        })
+    }
+
+    /// This function specifies a new multicast group for this socket to join.
+    /// Executes `UdpSocket::join_multicast_v4` under the hood.
+    pub fn with_multicast_v4(self, multiaddr: Ipv4Addr, interface: Ipv4Addr) -> Self {
+        Self {
+            addr: self.addr,
+            info: self.info,
+            multicast_addr: Some(multiaddr),
+            multicast_interface: Some(interface),
+            ttl: None,
+        }
+    }
+
+    /// Sets the time-to-live field that is used in every packet sent from this socket.
+    /// Executes `UdpSocket::set_ttl` under the hood.
+    pub fn with_ttl(self, ttl: u32) -> Self {
+        Self {
+            addr: self.addr,
+            info: self.info,
+            multicast_addr: self.multicast_addr,
+            multicast_interface: self.multicast_interface,
+            ttl: Some(ttl),
+        }
     }
 }
 
