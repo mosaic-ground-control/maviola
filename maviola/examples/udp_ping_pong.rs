@@ -1,3 +1,4 @@
+use std::net::UdpSocket;
 use std::thread;
 use std::time::Duration;
 
@@ -68,13 +69,13 @@ fn spawn_client(addr: &str, component_id: ComponentId) {
 }
 
 fn run(addr: &str) -> Result<()> {
-    let server_addr = addr.to_string();
+    let sock = UdpSocket::bind(addr)?;
     let mut server = Node::sync::<V2>()
         .system_id(17)
         .component_id(42)
         .heartbeat_interval(HEARTBEAT_INTERVAL)
         .heartbeat_timeout(HEARTBEAT_TIMEOUT)
-        .connection(UdpServer::new(server_addr)?)
+        .connection(UdpServer::new(sock)?)
         .build()?;
     server.activate()?;
 

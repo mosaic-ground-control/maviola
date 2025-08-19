@@ -15,8 +15,8 @@ use crate::sync::marker::ConnConf;
 
 impl<V: MaybeVersioned> ConnectionBuilder<V> for UdpServer {
     fn build(&self) -> Result<(Connection<V>, ConnectionHandler)> {
-        let server_addr = self.addr;
-        let udp_socket = UdpSocket::bind(server_addr)?;
+        let server_addr = self.sock.local_addr()?;
+        let udp_socket = self.sock.try_clone()?;
 
         let conn_state = Closer::new();
         let (connection, chan_factory) = Connection::new(self.info.clone(), conn_state.to_shared());

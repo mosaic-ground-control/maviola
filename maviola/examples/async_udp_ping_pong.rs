@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use portpicker::{pick_unused_port, Port};
-
 use maviola::protocol::ComponentId;
+use portpicker::{pick_unused_port, Port};
+use std::net::UdpSocket;
 
 use maviola::asnc::prelude::*;
 use maviola::prelude::*;
@@ -69,13 +69,13 @@ async fn spawn_client(addr: &str, component_id: ComponentId) {
 }
 
 async fn run(addr: &str) -> Result<()> {
-    let server_addr = addr.to_string();
+    let sock = UdpSocket::bind(addr)?;
     let mut server = Node::asnc::<V2>()
         .system_id(17)
         .component_id(42)
         .heartbeat_interval(HEARTBEAT_INTERVAL)
         .heartbeat_timeout(HEARTBEAT_TIMEOUT)
-        .connection(UdpServer::new(server_addr)?)
+        .connection(UdpServer::new(sock)?)
         .build()
         .await?;
     server.activate().await?;
