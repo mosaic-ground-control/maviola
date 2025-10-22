@@ -31,8 +31,9 @@ fn report_frame<V: MaybeVersioned>(whoami: &str, frame: &Frame<V>) {
 }
 
 async fn spawn_client(addr: &str, component_id: ComponentId) {
-    let client_addr = addr.to_string();
     let whoami = format!("client #{component_id}");
+    let conn = UdpSocket::bind(addr).expect("failed to bind socket");
+    conn.set_nonblocking(true).expect("failed to set socket to nonblocking mode");
 
     tokio::spawn(async move {
         let mut client = Node::asnc::<V2>()
@@ -40,7 +41,7 @@ async fn spawn_client(addr: &str, component_id: ComponentId) {
             .component_id(component_id)
             .heartbeat_interval(HEARTBEAT_INTERVAL)
             .heartbeat_timeout(HEARTBEAT_TIMEOUT)
-            .connection(UdpClient::new(client_addr)?)
+            .connection(UdpClient::new(conn)?)
             .build()
             .await?;
         client.activate().await?;

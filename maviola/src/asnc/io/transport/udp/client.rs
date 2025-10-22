@@ -5,7 +5,6 @@ use crate::asnc::io::transport::udp::udp_rw::UdpRW;
 use crate::asnc::io::{Connection, ConnectionBuilder, ConnectionHandler};
 use crate::asnc::marker::AsyncConnConf;
 use crate::core::io::ChannelDetails;
-use crate::core::utils::net::{pick_unused_port, resolve_socket_addr};
 use crate::core::utils::SharedCloser;
 
 use crate::prelude::*;
@@ -13,14 +12,11 @@ use crate::prelude::*;
 #[async_trait]
 impl<V: MaybeVersioned> ConnectionBuilder<V> for UdpClient {
     async fn build(&self) -> Result<(Connection<V>, ConnectionHandler)> {
-        let bind_addr = match self.bind_addr {
-            None => resolve_socket_addr(format!("{}:{}", self.host, pick_unused_port()?))?,
-            Some(bind_addr) => bind_addr,
-        };
-        let server_addr = self.addr;
+        let bind_addr = self.sock.local_addr()?;
+        let server_addr = self.sock.peer_addr()?;
 
-        let udp_socket = UdpSocket::bind(bind_addr).await?;
-        udp_socket.connect(server_addr).await?;
+        let udp_socket = self.sock.try_clone()?;
+        let udp_socket = UdpSocket::from_std(udp_socket)?;
 
         let writer = UdpRW::new(udp_socket);
         let reader = writer.clone();

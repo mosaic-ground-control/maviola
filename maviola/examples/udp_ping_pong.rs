@@ -33,8 +33,8 @@ fn report_frame<V: MaybeVersioned>(whoami: &str, frame: &Frame<V>) {
 }
 
 fn spawn_client(addr: &str, component_id: ComponentId) {
-    let client_addr = addr.to_string();
     let whoami = format!("client #{component_id}");
+    let conn = UdpSocket::bind(addr).expect("failed to bind socket");
 
     thread::spawn(move || -> Result<()> {
         let mut client = Node::sync::<V2>()
@@ -42,7 +42,7 @@ fn spawn_client(addr: &str, component_id: ComponentId) {
             .component_id(component_id)
             .heartbeat_interval(HEARTBEAT_INTERVAL)
             .heartbeat_timeout(HEARTBEAT_TIMEOUT)
-            .connection(UdpClient::new(client_addr)?)
+            .connection(UdpClient::new(conn)?)
             .build()?;
         client.activate()?;
 

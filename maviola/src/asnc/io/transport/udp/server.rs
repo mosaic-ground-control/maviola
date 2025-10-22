@@ -21,7 +21,6 @@ impl<V: MaybeVersioned> ConnectionBuilder<V> for UdpServer {
     async fn build(&self) -> Result<(Connection<V>, ConnectionHandler)> {
         let server_addr = self.sock.local_addr()?;
         let udp_socket = self.sock.try_clone()?;
-        udp_socket.set_nonblocking(true)?;
         let udp_socket = Arc::new(UdpSocket::from_std(udp_socket)?);
 
         let conn_state = Closer::new();
