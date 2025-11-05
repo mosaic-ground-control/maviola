@@ -42,7 +42,13 @@ impl<V: MaybeVersioned> ConnectionBuilder<V> for UdpServer {
             let mut buf = [0u8; 512];
 
             while !conn_state.is_closed() {
-                let (bytes_read, peer_addr) = udp_socket.recv_from(buf.as_mut_slice()).await?;
+                let (bytes_read, peer_addr) = match udp_socket.recv_from(buf.as_mut_slice()).await {
+                    Ok(res) => res,
+                    Err(err) => {
+                        log::error!("[{info:?}] socket returned error on read: {err:?}");
+                        continue;
+                    }
+                };
 
                 #[allow(clippy::map_entry)]
                 if !peers.contains_key(&peer_addr) {
